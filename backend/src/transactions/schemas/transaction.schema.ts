@@ -72,7 +72,7 @@ export class Transaction {
   @Prop({ required: true, type: Types.ObjectId, ref: Agent.name })
   sellingAgentId: Types.ObjectId;
 
-  @Prop({ required: true, enum: TRANSACTION_STAGES })
+  @Prop({ required: true, type: String, enum: TRANSACTION_STAGES })
   stage: TransactionStage;
 
   @Prop({ required: true })
