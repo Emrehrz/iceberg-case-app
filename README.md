@@ -1,73 +1,243 @@
-# Iceberg Case App Boilerplate
+# Iceberg Case App
 
-Bu proje, ayri `frontend` ve `backend` klasorleri ile kurulu bir fullstack boilerplate'tir.
+A full-stack real estate transaction system that models lifecycle progression as a **state machine** and ensures financial correctness by computing commissions as an **immutable snapshot at completion**.
 
-## Tech Stack
+---
 
-- Backend: Node.js (LTS), TypeScript, NestJS, MongoDB Atlas, Mongoose, Jest
-- Frontend: Nuxt 3, Pinia, Tailwind CSS
+## 🚀 Overview
 
-## Proje Yapisi
+This project focuses on solving a core domain problem:
 
-- `backend`: NestJS REST API
-- `frontend`: Nuxt 3 istemci uygulamasi
+> How to safely manage a transaction lifecycle and guarantee consistent financial outcomes.
 
-## Kurulum
+Key principles:
 
-### 1) Backend
+- Transactions are **stateful workflows**, not simple CRUD records
+- Commission is **calculated once** at the moment of completion
+- Financial results are stored as **immutable snapshots**
+- Backend acts as the **single source of truth** for all business rules
+
+---
+
+## 🧱 Tech Stack
+
+**Backend**
+
+- NestJS
+- MongoDB + Mongoose
+- class-validator
+- Jest
+
+**Frontend**
+
+- Nuxt 3
+- Pinia
+- Tailwind CSS
+
+---
+
+## ⚙️ Core Concepts
+
+### 1. Transaction as a State Machine
+
+```text
+agreement → earnest_money → title_deed → completed
+```
+
+- Forward-only transitions
+- No skipping or reverting
+- `completed` is terminal
+
+This ensures that the system always remains in a **valid business state**.
+
+---
+
+### 2. Commission Calculation (Snapshot Pattern)
+
+Commission is calculated **only once** during:
+
+```text
+title_deed → completed
+```
+
+At that moment:
+
+- 50% → agency
+- 50% → agent pool
+
+Rules:
+
+- Same agent → gets full agent pool
+- Different agents → split equally
+
+The result is stored as:
+
+```text
+commissionBreakdown (embedded snapshot)
+```
+
+Why this matters:
+
+- Prevents recalculation inconsistencies
+- Preserves historical accuracy
+- Decouples financial data from future rule changes
+
+---
+
+### 3. Immutability of Completed Transactions
+
+Once a transaction reaches `completed`:
+
+- Stage updates are rejected
+- Commission is locked
+- Financial outcome is treated as final
+
+This ensures **financial integrity** and prevents accidental mutation.
+
+---
+
+### 4. Domain-Driven Service Design
+
+`CommissionService` is:
+
+- Controller-less
+- Pure (no DB access)
+- Deterministic
+
+It is invoked **only by `TransactionService`**, preventing misuse outside the lifecycle.
+
+---
+
+### 5. Data Modeling Strategy
+
+- `Agent` and `Property` → referenced (ObjectId)
+- `Transaction` → central aggregate
+- `CommissionBreakdown` → embedded snapshot
+- `AgentSnapshot` → embedded for historical accuracy
+- `stageHistory` → embedded audit trail
+
+---
+
+## 🧪 API Endpoints
+
+```http
+POST   /api/transactions
+GET    /api/transactions
+GET    /api/transactions/:id
+PATCH  /api/transactions/:id/stage
+
+GET    /api/agents
+GET    /api/properties
+```
+
+---
+
+## 🖥️ Frontend
+
+The UI reflects backend state rather than enforcing rules.
+
+### Pages
+
+- `/` → Dashboard (metrics + summary)
+- `/transactions` → Transaction list
+- `/transactions/[id]` → Detail view
+
+### Features
+
+- Stage stepper driven by backend state
+- Commission breakdown appears only after completion
+- Human-readable mapping via agent/property lookup
+
+---
+
+## ▶️ Getting Started
+
+### 1. Install dependencies
+
+```bash
+pnpm install
+```
+
+---
+
+### 2. Run backend
 
 ```bash
 cd backend
-cp .env.example .env
-pnpm install
-pnpm start:dev
+pnpm run start:dev
 ```
 
-Varsayilan backend adresi: `http://localhost:4000`
+---
 
-Gerekli degiskenler (`backend/.env`):
-
-- `MONGODB_URI`: Atlas baglanti string'i
-- `PORT`: API portu (varsayilan 4000)
-- `FRONTEND_ORIGIN`: CORS origin (varsayilan `http://localhost:3000`)
-
-### 2) Frontend
+### 3. Run frontend
 
 ```bash
 cd frontend
-cp .env.example .env
-pnpm install
-pnpm dev
+pnpm run dev
 ```
 
-Varsayilan frontend adresi: `http://localhost:3000`
+---
 
-Gerekli degiskenler (`frontend/.env`):
+### 4. Seed data (optional)
 
-- `NUXT_PUBLIC_API_BASE`: Backend base URL (varsayilan `http://localhost:4000/api`)
+Use the UI or API to create:
 
-## API Endpoints
+- agents
+- properties
+- transactions
 
-- `GET /api/health`: Servis saglik kontrolu
-- `GET /api/items`: Tum item'lari listeler
-- `POST /api/items`: Yeni item olusturur
-- `GET /api/items/:id`: Tek item getirir
-- `PATCH /api/items/:id`: Item gunceller
-- `DELETE /api/items/:id`: Item siler
+---
 
-## Hizli Smoke Test
-
-1. Backend'i baslat (`pnpm start:dev`)
-2. `GET http://localhost:4000/api/health` isteginden `status: ok` dondugunu dogrula
-3. Frontend'i baslat (`pnpm dev`)
-4. Ana ekranda item listesinin yüklendigini kontrol et
-5. Formdan item ekleyip listenin guncellendigini dogrula
-
-## Test
-
-Backend testleri:
+## 🧪 Run Tests
 
 ```bash
 cd backend
-pnpm test
+pnpm run test
 ```
+
+Includes:
+
+- Commission logic tests
+- Transaction lifecycle tests
+
+---
+
+## 📄 Design Decisions
+
+Detailed architectural decisions are documented in:
+
+```text
+DESIGN.md
+```
+
+This includes:
+
+- Schema modeling trade-offs
+- State machine design
+- Commission snapshot reasoning
+- Module boundaries
+
+---
+
+## 🎯 Key Takeaways
+
+This project is intentionally designed to demonstrate:
+
+- Modeling workflows as **state machines**
+- Applying **snapshot-based financial consistency**
+- Enforcing **domain rules at the service layer**
+- Maintaining **clean architecture boundaries**
+
+---
+
+## 📌 Notes
+
+- Commission uses standard JS numbers for simplicity
+- In production, fixed-point/decimal handling would be preferred
+- The system prioritizes **correctness over feature breadth**
+
+---
+
+## 👤 Author
+
+Built as part of a full-stack engineering case study.
