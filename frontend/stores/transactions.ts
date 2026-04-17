@@ -85,7 +85,7 @@ export const useTransactionsStore = defineStore('transactions', {
         this.transactions = await useApiFetch<Transaction[]>('/transactions');
       } catch (error) {
         this.error =
-          error instanceof Error ? error.message : 'Transactions getirilemedi.';
+          error instanceof Error ? error.message : 'Failed to load transactions.';
       } finally {
         this.isLoading = false;
       }
@@ -105,7 +105,7 @@ export const useTransactionsStore = defineStore('transactions', {
         return tx;
       } catch (error) {
         this.error =
-          error instanceof Error ? error.message : 'Transaction getirilemedi.';
+          error instanceof Error ? error.message : 'Failed to load transaction.';
         throw error;
       } finally {
         this.isLoading = false;
@@ -124,7 +124,7 @@ export const useTransactionsStore = defineStore('transactions', {
         return created;
       } catch (error) {
         this.error =
-          error instanceof Error ? error.message : 'Transaction eklenemedi.';
+          error instanceof Error ? error.message : 'Failed to create transaction.';
         throw error;
       } finally {
         this.isLoading = false;
@@ -132,7 +132,7 @@ export const useTransactionsStore = defineStore('transactions', {
     },
 
     async updateTransactionStage(id: string, payload: UpdateTransactionStagePayload) {
-      // İsteğe bağlı UX koruması: frontend completed iken tekrar patch atmayalım.
+      // Guard: skip the request if the transaction is already completed.
       const existing =
         this.currentTransaction?._id === id ? this.currentTransaction : null;
       if (existing?.stage === 'completed') return existing;
@@ -156,7 +156,7 @@ export const useTransactionsStore = defineStore('transactions', {
         return updated;
       } catch (error) {
         this.error =
-          error instanceof Error ? error.message : 'Stage güncellenemedi.';
+          error instanceof Error ? error.message : 'Failed to update stage.';
         throw error;
       } finally {
         this.isLoading = false;

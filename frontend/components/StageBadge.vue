@@ -5,19 +5,19 @@ const props = defineProps<{ stage: TransactionStage | string }>();
 
 const config: Record<string, { label: string; classes: string }> = {
   agreement: {
-    label: 'El Sıkışma',
+    label: 'Agreement',
     classes: 'bg-amber-100 text-amber-700 ring-amber-300',
   },
   earnest_money: {
-    label: 'Kapora',
+    label: 'Earnest Money',
     classes: 'bg-blue-100 text-blue-700 ring-blue-300',
   },
   title_deed: {
-    label: 'Tapu',
+    label: 'Title Deed',
     classes: 'bg-violet-100 text-violet-700 ring-violet-300',
   },
   completed: {
-    label: 'Tamamlandı',
+    label: 'Completed',
     classes: 'bg-emerald-100 text-emerald-700 ring-emerald-300',
   },
 };

@@ -1,23 +1,38 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { useTransactionsStore, type TransactionStage } from '~/stores/transactions';
+import { useCatalogStore } from '~/stores/catalog';
 
 const route = useRoute();
 const id = route.params.id as string;
 
 const store = useTransactionsStore();
-const { currentTransaction: tx, isLoading, error } = storeToRefs(store);
+const catalogStore = useCatalogStore();
 
-onMounted(() => store.fetchTransaction(id));
+const { currentTransaction: tx, isLoading, error } = storeToRefs(store);
+const { agents, properties } = storeToRefs(catalogStore);
+
+onMounted(() => {
+  store.fetchTransaction(id);
+  if (!agents.value.length || !properties.value.length) {
+    catalogStore.fetchAll();
+  }
+});
+
+const propertyTitle = (id: string) =>
+  properties.value.find((p) => p._id === id)?.title ?? id.slice(-8);
+
+const agentName = (id: string) =>
+  agents.value.find((a) => a._id === id)?.name ?? id.slice(-8);
 
 // ── Stage machine ──────────────────────────────────────────────
 const STAGES: TransactionStage[] = ['agreement', 'earnest_money', 'title_deed', 'completed'];
 
 const stageLabel: Record<TransactionStage, string> = {
-  agreement: 'El Sıkışma',
-  earnest_money: 'Kapora',
-  title_deed: 'Tapu',
-  completed: 'Tamamlandı',
+  agreement: 'Agreement',
+  earnest_money: 'Earnest Money',
+  title_deed: 'Title Deed',
+  completed: 'Completed',
 };
 
 const currentStageIndex = computed(() =>
@@ -40,7 +55,7 @@ async function advance() {
   try {
     await store.updateTransactionStage(id, { stage: nextStage.value });
   } catch (e) {
-    updateError.value = e instanceof Error ? e.message : 'Stage güncellenemedi.';
+    updateError.value = e instanceof Error ? e.message : 'Failed to update stage.';
   } finally {
     isUpdating.value = false;
   }
@@ -48,10 +63,10 @@ async function advance() {
 
 // ── Formatters ─────────────────────────────────────────────────
 const fmt = (n: number) =>
-  new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(n);
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'TRY' }).format(n);
 
 const fmtDate = (d?: string) =>
-  d ? new Date(d).toLocaleString('tr-TR') : '—';
+  d ? new Date(d).toLocaleString('en-US') : '—';
 </script>
 
 <template>
@@ -70,7 +85,7 @@ const fmtDate = (d?: string) =>
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
       </svg>
-      Yükleniyor…
+      Loading…
     </div>
     <p v-else-if="error && !tx" class="text-sm text-red-600">{{ error }}</p>
 
@@ -78,7 +93,9 @@ const fmtDate = (d?: string) =>
       <!-- Header -->
       <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900">Transaction Detayı</h1>
+          <h1 class="text-2xl font-bold text-slate-900">
+            {{ propertyTitle(tx.propertyId) }}
+          </h1>
           <p class="mt-1 font-mono text-xs text-slate-400">{{ tx._id }}</p>
         </div>
         <StageBadge :stage="tx.stage" />
@@ -86,25 +103,58 @@ const fmtDate = (d?: string) =>
 
       <!-- Info grid -->
       <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <!-- Property -->
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Hizmet Bedeli
+            Property
+          </p>
+          <p class="mt-1.5 text-sm font-bold text-slate-900">
+            {{ propertyTitle(tx.propertyId) }}
+          </p>
+          <p class="mt-0.5 font-mono text-xs text-slate-400">{{ tx.propertyId.slice(-8) }}</p>
+        </div>
+
+        <!-- Agents -->
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Agents
+          </p>
+          <div class="mt-1.5 space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-700">L</span>
+              <span class="text-sm font-medium text-slate-800">{{ agentName(tx.listingAgentId) }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-semibold text-blue-700">S</span>
+              <span class="text-sm font-medium text-slate-800">{{ agentName(tx.sellingAgentId) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Service Fee -->
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Service Fee
           </p>
           <p class="mt-1.5 text-xl font-bold text-slate-900">
             {{ fmt(tx.totalServiceFee) }}
           </p>
         </div>
+
+        <!-- Agreement Date -->
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Anlaşma Tarihi
+            Agreement Date
           </p>
           <p class="mt-1.5 text-sm font-semibold text-slate-900">
             {{ fmtDate(tx.agreedAt) }}
           </p>
         </div>
+
+        <!-- Completion Date -->
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Tamamlanma Tarihi
+            Completion Date
           </p>
           <p class="mt-1.5 text-sm font-semibold text-slate-900">
             {{ fmtDate(tx.completedAt) }}
@@ -114,7 +164,7 @@ const fmtDate = (d?: string) =>
 
       <!-- ── Stage Stepper ─────────────────────────────────────── -->
       <div class="mb-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 class="mb-5 text-base font-semibold text-slate-800">Aşamalar</h2>
+        <h2 class="mb-5 text-base font-semibold text-slate-800">Stages</h2>
 
         <ol class="relative flex items-start">
           <li
@@ -204,7 +254,7 @@ const fmtDate = (d?: string) =>
               />
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
-            {{ stageLabel[nextStage] }} aşamasına geç
+            Advance to {{ stageLabel[nextStage] }}
           </button>
           <p v-if="updateError" class="text-sm text-red-600">{{ updateError }}</p>
         </div>
@@ -212,7 +262,7 @@ const fmtDate = (d?: string) =>
           v-else
           class="mt-5 text-sm font-medium text-emerald-600"
         >
-          ✓ İşlem tamamlandı — değiştirilemez.
+          ✓ Transaction completed — no further changes allowed.
         </p>
       </div>
 
@@ -235,7 +285,7 @@ const fmtDate = (d?: string) =>
               />
             </svg>
             <h2 class="text-base font-semibold text-emerald-800">
-              Komisyon Dağılımı
+              Commission Breakdown
             </h2>
             <span
               class="ml-auto rounded bg-emerald-200 px-2 py-0.5 text-xs font-semibold text-emerald-700"
@@ -248,7 +298,7 @@ const fmtDate = (d?: string) =>
           <div class="mb-4 flex items-center justify-between rounded-lg border border-emerald-200 bg-white px-4 py-3">
             <div>
               <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Agency Payı (%50)
+                Agency Share (50%)
               </p>
               <p class="mt-0.5 text-lg font-bold text-slate-900">
                 {{ fmt(tx.commissionBreakdown.agency) }}
@@ -261,7 +311,7 @@ const fmtDate = (d?: string) =>
 
           <!-- Agent snapshots -->
           <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Danışman Payları
+            Agent Shares
           </p>
           <ul class="space-y-2">
             <li
@@ -281,10 +331,10 @@ const fmtDate = (d?: string) =>
                 >
                   {{
                     agent.role === 'listing'
-                      ? 'Listeleyici'
+                      ? 'Listing'
                       : agent.role === 'selling'
-                      ? 'Satıcı'
-                      : 'Her İkisi'
+                      ? 'Selling'
+                      : 'Both'
                   }}
                 </span>
               </div>
@@ -293,7 +343,7 @@ const fmtDate = (d?: string) =>
           </ul>
 
           <p class="mt-3 text-right text-xs text-slate-400">
-            Hesaplandı: {{ fmtDate(tx.commissionBreakdown.calculatedAt) }}
+            Calculated: {{ fmtDate(tx.commissionBreakdown.calculatedAt) }}
           </p>
         </div>
       </Transition>
@@ -303,7 +353,7 @@ const fmtDate = (d?: string) =>
         v-if="tx.stageHistory && tx.stageHistory.length"
         class="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
       >
-        <h2 class="mb-3 text-base font-semibold text-slate-800">Aşama Geçmişi</h2>
+        <h2 class="mb-3 text-base font-semibold text-slate-800">Stage History</h2>
         <ol class="space-y-2">
           <li
             v-for="(entry, i) in tx.stageHistory"
