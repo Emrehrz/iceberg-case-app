@@ -62,6 +62,8 @@ The following class diagram summarizes the persisted transaction model and the m
 
 ![Class Diagram For Collections](./backend/collection_erd.svg)
 
+_Figure 1: Simplified class diagram of transaction-related data structures._
+
 Why `stageHistory` is embedded:
 
 - Stage changes belong only to a single transaction.
@@ -158,6 +160,8 @@ The following diagram shows the high-level module interaction exactly as impleme
 
 ![Module Structure](./backend/module_structure.svg)
 
+_Figure 2: Module structure showing CommissionModule without a controller and TransactionService depending on CommissionService._
+
 The important design point is that commission calculation is orchestrated by the transaction domain, not exposed directly as its own API workflow.
 
 ### 2.4 `calculate()` Contract
@@ -204,6 +208,8 @@ For simplicity, commission values are currently handled as JavaScript numbers. I
 
 ### 3.1 Stage Set
 
+The transaction lifecycle is modeled as a strict, forward-only state machine where each stage transition represents a business milestone.
+
 ```text
 agreement -> earnest_money -> title_deed -> completed
 ```
@@ -218,22 +224,15 @@ agreement -> earnest_money -> title_deed -> completed
 The transaction lifecycle is implemented as a strict state machine. The diagram below shows the only valid forward path, with `completed` as the terminal stage and no backward transitions.
 
 ```mermaid
-sequenceDiagram
-  participant Client
-  participant Controller
-  participant TransactionService
-  participant CommissionService
+stateDiagram-v2
+    [*] --> agreement
+    agreement --> earnest_money
+    earnest_money --> title_deed
+    title_deed --> completed
+    completed --> [*]
 
-  Client->>Controller: PATCH /transactions/:id/stage
-  Controller->>TransactionService: updateStage()
-  TransactionService->>TransactionService: validateTransition
-
-  alt stage == completed
-    TransactionService->>CommissionService: calculate()
-    CommissionService-->>TransactionService: snapshot
-  end
-
-  TransactionService-->>Controller: updated transaction
+    note right of agreement : No backward transitions
+    note right of completed : Terminal stage
 ```
 
 ### 3.2 Allowed Transitions
@@ -281,6 +280,28 @@ GET /api/properties
 ### 3.5 Special Meaning of `title_deed -> completed`
 
 The transition to `completed` is more than a stage update. It is the moment when financial state becomes final.
+
+The sequence diagram below shows how `PATCH /transactions/:id/stage` traverses the system, with the commission calculation branch only executed when the target stage is `completed`.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant TransactionService
+    participant CommissionService
+
+    Client->>Controller: PATCH /transactions/:id/stage
+    Controller->>TransactionService: updateStage()
+
+    TransactionService->>TransactionService: validateTransition
+
+    alt stage == completed
+        TransactionService->>CommissionService: calculate()
+        CommissionService-->>TransactionService: CommissionBreakdown
+    end
+
+    TransactionService-->>Controller: Updated Transaction
+```
 
 ```text
 1. Validate that the next stage is exactly `completed`
