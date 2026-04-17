@@ -218,15 +218,22 @@ agreement -> earnest_money -> title_deed -> completed
 The transaction lifecycle is implemented as a strict state machine. The diagram below shows the only valid forward path, with `completed` as the terminal stage and no backward transitions.
 
 ```mermaid
-stateDiagram-v2
-    [*] --> agreement
-    agreement --> earnest_money
-    earnest_money --> title_deed
-    title_deed --> completed
-    completed --> [*]
+sequenceDiagram
+  participant Client
+  participant Controller
+  participant TransactionService
+  participant CommissionService
 
-    note right of agreement : No backward transitions
-    note right of completed : Terminal stage
+  Client->>Controller: PATCH /transactions/:id/stage
+  Controller->>TransactionService: updateStage()
+  TransactionService->>TransactionService: validateTransition
+
+  alt stage == completed
+    TransactionService->>CommissionService: calculate()
+    CommissionService-->>TransactionService: snapshot
+  end
+
+  TransactionService-->>Controller: updated transaction
 ```
 
 ### 3.2 Allowed Transitions
