@@ -156,28 +156,7 @@ AppModule
 
 The following diagram shows the high-level module interaction exactly as implemented today. `CommissionModule` exposes `CommissionService` without any controller, and `TransactionService` depends on that service.
 
-```mermaid
-flowchart TD
-    AppModule[AppModule]
-    TransactionModule[TransactionModule]
-    CommissionModule["CommissionModule<br/>(no controller)"]
-    AgentModule[AgentModule]
-    PropertyModule[PropertyModule]
-    TransactionService[TransactionService]
-    CommissionService[CommissionService]
-
-    AppModule --> TransactionModule
-    AppModule --> CommissionModule
-    AppModule --> AgentModule
-    AppModule --> PropertyModule
-
-    TransactionModule --> CommissionModule
-    TransactionModule --> AgentModule
-    TransactionModule --> PropertyModule
-    TransactionModule --> TransactionService
-    CommissionModule --> CommissionService
-    TransactionService --> CommissionService
-```
+![Module Structure](./backend/module_structure.svg)
 
 The important design point is that commission calculation is orchestrated by the transaction domain, not exposed directly as its own API workflow.
 
