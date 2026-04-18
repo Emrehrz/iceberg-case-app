@@ -36,6 +36,15 @@ Key principles:
 
 ---
 
+## Live deployment
+
+- **Frontend (Vercel):** [https://iceberg-case-app-njw5.vercel.app/transactions](https://iceberg-case-app-njw5.vercel.app/transactions)
+- **Backend API (Render):** [https://iceberg-case-app.onrender.com/api](https://iceberg-case-app.onrender.com/api)
+
+> ⚠️ The backend runs on a free-tier service, so the first request may take a few seconds due to cold start.
+
+---
+
 ## ⚙️ Core Concepts
 
 ### 1. Transaction as a State Machine
