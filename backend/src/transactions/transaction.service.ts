@@ -22,18 +22,18 @@ export class TransactionService {
     TransactionStage,
     TransactionStage | null
   > = {
-    agreement: 'earnest_money',
-    earnest_money: 'title_deed',
-    title_deed: 'completed',
-    completed: null,
-  };
+      agreement: 'earnest_money',
+      earnest_money: 'title_deed',
+      title_deed: 'completed',
+      completed: null,
+    };
 
   constructor(
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<TransactionDocument>,
     private readonly commissionService: CommissionService,
     @InjectModel(Agent.name) private readonly agentModel: Model<AgentDocument>,
-  ) {}
+  ) { }
 
   async create(dto: CreateTransactionDto): Promise<Transaction> {
     const agreedAt = new Date(dto.agreedAt);
@@ -118,13 +118,6 @@ export class TransactionService {
 
       tx.commissionBreakdown = commissionBreakdown;
       tx.completedAt = new Date();
-    } else {
-      // completed dışındaki durumlarda commissionBreakdown sabit kalır.
-      // (State machine gereği completed'a geçiş yapılmadan commission hesaplanmaz.)
-      if (typeof tx.commissionBreakdown !== 'undefined') {
-        // Güvenlik: completed'a geçmeden commission oluştuysa temizlemiyoruz.
-        // Prompt gereği completion sonrası değişim zaten reddedilecek.
-      }
     }
 
     await tx.save();
