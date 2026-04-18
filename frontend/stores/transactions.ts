@@ -1,54 +1,9 @@
 import { defineStore } from 'pinia';
-
-export type TransactionStage =
-  | 'agreement'
-  | 'earnest_money'
-  | 'title_deed'
-  | 'completed';
-
-export interface StageHistoryEntry {
-  stage: TransactionStage | string;
-  changedAt: string;
-}
-
-export interface AgentSnapshot {
-  agentId: string;
-  name: string;
-  role: 'listing' | 'selling' | 'both';
-  amount: number;
-}
-
-export interface CommissionBreakdown {
-  agency: number;
-  agents: AgentSnapshot[];
-  calculatedAt: string;
-  ruleVersion: string;
-}
-
-export interface Transaction {
-  _id: string;
-  propertyId: string;
-  listingAgentId: string;
-  sellingAgentId: string;
-  stage: TransactionStage;
-  totalServiceFee: number;
-  commissionBreakdown?: CommissionBreakdown;
-  agreedAt: string;
-  completedAt?: string;
-  stageHistory: StageHistoryEntry[];
-}
-
-interface CreateTransactionPayload {
-  propertyId: string;
-  listingAgentId: string;
-  sellingAgentId: string;
-  totalServiceFee: number;
-  agreedAt: string; // ISO string expected by backend validation
-}
-
-interface UpdateTransactionStagePayload {
-  stage: TransactionStage;
-}
+import type {
+  CreateTransactionPayload,
+  Transaction,
+  UpdateTransactionStagePayload,
+} from '~/types/transactions';
 
 export const useTransactionsStore = defineStore('transactions', {
   state: () => ({
@@ -164,4 +119,3 @@ export const useTransactionsStore = defineStore('transactions', {
     },
   },
 });
-

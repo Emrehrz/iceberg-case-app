@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { useTransactionsStore, type TransactionStage } from '~/stores/transactions';
+import { useTransactionsStore } from '~/stores/transactions';
+import type { TransactionStage } from '~/types/transactions';
 import { useCatalogStore } from '~/stores/catalog';
 
 const route = useRoute();

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TransactionStage } from '~/stores/transactions';
+import type { TransactionStage } from '~/types/transactions';
 
 const props = defineProps<{ stage: TransactionStage | string }>();
 
